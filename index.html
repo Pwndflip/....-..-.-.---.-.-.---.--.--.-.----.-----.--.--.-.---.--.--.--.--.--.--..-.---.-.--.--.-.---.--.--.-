@@ -91,35 +91,29 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        var markerLayer = L.layerGroup().addTo(map); // Marker katmanı için grup
+        var markerLayer = L.layerGroup().addTo(map);
 
         function fetchEarthquakes() {
-            var endDate = new Date();
-            var startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000); // Son 7 gün
+            // Kandilli API'si
+            const apiUrl = 'https://api.orhanaydogdu.com.tr/deprem/kandilli/live';
 
-            var filter = {
-                "EventSearchFilterList": [
-                    {"FilterType": 8, "Value": startDate.toISOString()},
-                    {"FilterType": 9, "Value": endDate.toISOString()}
-                ],
-                "Skip": 0,
-                "Take": 50,
-                "SortDescriptor": {"field": "eventDate", "dir": "desc"}
-            };
-
-            fetch('https://deprem.afad.gov.tr/EventData/GetEventsByFilter', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(filter)
-            })
+            fetch(apiUrl)
             .then(response => response.json())
             .then(data => {
-                markerLayer.clearLayers(); // Eski markerleri temizle
-                data.events.forEach(event => { // Veri yapısını varsaydım; 'events' array'i ve içinde lat, lon, magnitude, eventDate vb.
-                    var marker = L.marker([event.latitude, event.longitude]).bindPopup(
-                        `Büyüklük: ${event.magnitude}<br>Tarih: ${event.eventDate}<br>Derinlik: ${event.depth} km`
+                markerLayer.clearLayers();
+                data.result.forEach(event => {
+                    const lat = event.geojson.coordinates[1];
+                    const lon = event.geojson.coordinates[0];
+                    const magnitude = event.mag;
+                    const date = event.date;
+                    const depth = event.depth;
+                    const location = event.lokasyon;
+                    
+                    var marker = L.marker([lat, lon]).bindPopup(
+                        `<b>Konum:</b> ${location}<br>` +
+                        `<b>Büyüklük:</b> ${magnitude}<br>` +
+                        `<b>Tarih:</b> ${date}<br>` +
+                        `<b>Derinlik:</b> ${depth} km`
                     );
                     markerLayer.addLayer(marker);
                 });
@@ -128,7 +122,7 @@
         }
 
         fetchEarthquakes(); // İlk yükleme
-        setInterval(fetchEarthquakes, 2000); // Her 2 saniyede bir güncelle
+        setInterval(fetchEarthquakes, 60000); // Her 60 saniyede bir güncelle
     </script>
 </body>
 </html>
