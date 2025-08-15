@@ -72,6 +72,12 @@
         <a href="#gecmis">Geçmiş Veriler</a>
         <a href="#yardim">Yardım & Destek</a>
     </nav>
+
+    <!-- Button for Kandilli Data -->
+    <div style="text-align:center; margin-bottom:10px;">
+        <button onclick="fetchKandilliEarthquakes()">Kandilli Verilerini Göster</button>
+    </div>
+
     <div class="map-container" id="map"></div>
     <div class="info">
         <h2>Güncel Bilgiler</h2>
@@ -117,7 +123,7 @@
             .then(response => response.json())
             .then(data => {
                 markerLayer.clearLayers(); // Eski markerleri temizle
-                data.events.forEach(event => { // Veri yapısını varsaydım; 'events' array'i ve içinde lat, lon, magnitude, eventDate vb.
+                data.events.forEach(event => {
                     var marker = L.marker([event.latitude, event.longitude]).bindPopup(
                         `Büyüklük: ${event.magnitude}<br>Tarih: ${event.eventDate}<br>Derinlik: ${event.depth} km`
                     );
@@ -125,6 +131,22 @@
                 });
             })
             .catch(error => console.error('API Hatası:', error));
+        }
+
+        // Kandilli API'den verileri çekmek için fonksiyon
+        function fetchKandilliEarthquakes() {
+            fetch('https://api.orhanaydogdu.com.tr/deprem/live')
+            .then(response => response.json())
+            .then(data => {
+                markerLayer.clearLayers(); // Eski markerleri temizle
+                data.result.forEach(event => {
+                    var marker = L.marker([event.latitude, event.longitude]).bindPopup(
+                        `Büyüklük: ${event.mag}<br>Tarih: ${event.date}<br>Yer: ${event.title}`
+                    );
+                    markerLayer.addLayer(marker);
+                });
+            })
+            .catch(error => console.error('Kandilli API Hatası:', error));
         }
 
         fetchEarthquakes(); // İlk yükleme
