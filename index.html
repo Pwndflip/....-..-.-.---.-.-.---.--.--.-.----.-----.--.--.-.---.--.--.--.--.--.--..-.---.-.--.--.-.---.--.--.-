@@ -6,7 +6,61 @@
     <title>TrDeprem - Acil Durum Haritası</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* ... your existing styles ... */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        header {
+            background-color: #003087;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+        }
+        nav {
+            background-color: #0055a4;
+            padding: 10px;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            margin: 0 15px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        nav a:hover {
+            text-decoration: underline;
+        }
+        .map-container {
+            width: 100%;
+            height: 600px;
+            margin: 20px 0;
+        }
+        .info {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: left;
+        }
+        .info h2 {
+            color: #003087;
+        }
+        footer {
+            background-color: #003087;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            position: relative;
+            width: 100%;
+        }
+        .ssl-logo {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
@@ -18,17 +72,7 @@
         <a href="#gecmis">Geçmiş Veriler</a>
         <a href="#yardim">Yardım & Destek</a>
     </nav>
-
-    <!-- Kandilli button -->
-    <div style="text-align:center; margin-bottom:10px;">
-        <button onclick="fetchKandilliEarthquakes()">Kandilli Verilerini Göster</button>
-    </div>
-
     <div class="map-container" id="map"></div>
-
-    <!-- Earthquake list (injected below map) -->
-    <div id="quake-list" style="max-width:1200px; margin: 0 auto; padding: 10px;"></div>
-
     <div class="info">
         <h2>Güncel Bilgiler</h2>
         <p>TrDeprem Acil Durum Merkezi'ne hoş geldiniz. Burada deprem olaylarına ilişkin güncel bilgiler ve destek kaynakları bulabilirsiniz. Acil durumlarda lütfen resmi makamlara başvurun.</p>
@@ -36,32 +80,22 @@
     <footer>
         <p>&copy; 2025 TrDeprem - Tüm Hakları Saklıdır</p>
     </footer>
-    <a href="https://www.checkdomain.net/en/company/warranties/ssl/popup/" onclick="window.open(this.href + '?host=' + window.location.host','height=600,width=560,scrollbars=yes'); return false;" class="ssl-logo">
+    <a href="https://www.checkdomain.net/en/company/warranties/ssl/popup/" onclick="window.open(this.href + '?host=' + window.location.host,'','height=600,width=560,scrollbars=yes'); return false;" class="ssl-logo">
         <img src="https://www.checkdomain.net/assets/bundles/web/app/widget/seal/img/ssl_certificate/150x150.png?20250812-112811" alt="SSL" />
     </a>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        var map = L.map('map').setView([39.9255, 32.8663], 6);
+        var map = L.map('map').setView([39.9255, 32.8663], 6); // Türkiye merkezi
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        var markerLayer = L.layerGroup().addTo(map);
-
-        function updateQuakeListHTML(list) {
-            var listDiv = document.getElementById('quake-list');
-            var html = "<h3>Son Depremler</h3><ul>";
-            list.forEach(item => {
-                html += `<li>${item}</li>`;
-            });
-            html += "</ul>";
-            listDiv.innerHTML = html;
-        }
+        var markerLayer = L.layerGroup().addTo(map); // Marker katmanı için grup
 
         function fetchEarthquakes() {
             var endDate = new Date();
-            var startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+            var startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000); // Son 7 gün
 
             var filter = {
                 "EventSearchFilterList": [
@@ -82,40 +116,19 @@
             })
             .then(response => response.json())
             .then(data => {
-                markerLayer.clearLayers();
-                var listText = [];
-                data.events.forEach(event => {
+                markerLayer.clearLayers(); // Eski markerleri temizle
+                data.events.forEach(event => { // Veri yapısını varsaydım; 'events' array'i ve içinde lat, lon, magnitude, eventDate vb.
                     var marker = L.marker([event.latitude, event.longitude]).bindPopup(
                         `Büyüklük: ${event.magnitude}<br>Tarih: ${event.eventDate}<br>Derinlik: ${event.depth} km`
                     );
                     markerLayer.addLayer(marker);
-                    listText.push(`(${event.magnitude}) ${event.eventDate} - [${event.latitude}, ${event.longitude}]`);
                 });
-                updateQuakeListHTML(listText);
             })
             .catch(error => console.error('API Hatası:', error));
         }
 
-        function fetchKandilliEarthquakes() {
-            fetch('https://api.orhanaydogdu.com.tr/deprem/live')
-            .then(response => response.json())
-            .then(data => {
-                markerLayer.clearLayers();
-                var listText = [];
-                data.result.forEach(event => {
-                    var marker = L.marker([event.latitude, event.longitude]).bindPopup(
-                        `Büyüklük: ${event.mag}<br>Tarih: ${event.date}<br>Yer: ${event.title}`
-                    );
-                    markerLayer.addLayer(marker);
-                    listText.push(`(${event.mag}) ${event.date} - ${event.title}`);
-                });
-                updateQuakeListHTML(listText);
-            })
-            .catch(error => console.error('Kandilli API Hatası:', error));
-        }
-
-        fetchEarthquakes();
-        setInterval(fetchEarthquakes, 2000);
+        fetchEarthquakes(); // İlk yükleme
+        setInterval(fetchEarthquakes, 2000); // Her 2 saniyede bir güncelle
     </script>
 </body>
 </html>
