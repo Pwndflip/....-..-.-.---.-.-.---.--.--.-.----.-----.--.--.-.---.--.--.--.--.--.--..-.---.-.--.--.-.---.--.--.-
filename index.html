@@ -33,27 +33,72 @@
         nav a:hover {
             text-decoration: underline;
         }
-        .map-container {
-            width: 100%;
-            height: 600px;
-            margin: 20px 0;
-        }
-        .info {
+        .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            text-align: left;
         }
-        .info h2 {
+        .map-container {
+            width: 100%;
+            height: 500px; /* Biraz küçültüldü */
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .content-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .content-section.fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        h2 {
             color: #003087;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        .earthquake-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .earthquake-item:hover {
+            background-color: #f9f9f9;
+        }
+        .earthquake-item:last-child {
+            border-bottom: none;
+        }
+        .magnitude {
+            font-weight: bold;
+            color: #d9534f;
+        }
+        .details {
+            display: none;
+            padding-top: 10px;
+            border-top: 1px dashed #e0e0e0;
+            margin-top: 10px;
+        }
+        .details p {
+            margin: 5px 0;
+        }
+        #earthquake-details {
+            display: none;
         }
         footer {
             background-color: #003087;
             color: white;
             text-align: center;
             padding: 10px;
-            position: relative;
-            width: 100%;
         }
         .ssl-logo {
             position: fixed;
@@ -72,10 +117,17 @@
         <a href="#gecmis">Geçmiş Veriler</a>
         <a href="#yardim">Yardım & Destek</a>
     </nav>
-    <div class="map-container" id="map"></div>
-    <div class="info">
-        <h2>Güncel Bilgiler</h2>
-        <p>TrDeprem Acil Durum Merkezi'ne hoş geldiniz. Burada deprem olaylarına ilişkin güncel bilgiler ve destek kaynakları bulabilirsiniz. Acil durumlarda lütfen resmi makamlara başvurun.</p>
+    <div class="container">
+        <div class="map-container" id="map"></div>
+        <div class="content-section" id="earthquake-list-section">
+            <div id="earthquake-details">
+                <h2>Seçilen Deprem Bilgisi</h2>
+                <div id="details-content"></div>
+            </div>
+            <div id="earthquake-list">
+                <h2>Son Depremler</h2>
+            </div>
+        </div>
     </div>
     <footer>
         <p>&copy; 2025 TrDeprem - Tüm Hakları Saklıdır</p>
@@ -92,30 +144,74 @@
         }).addTo(map);
 
         var markerLayer = L.layerGroup().addTo(map);
+        const earthquakeListContainer = document.getElementById('earthquake-list');
+        const earthquakeDetailsContainer = document.getElementById('earthquake-details');
+        const detailsContent = document.getElementById('details-content');
+
+        // Yükleme animasyonunu başlat
+        const sections = document.querySelectorAll('.content-section');
+        setTimeout(() => {
+            sections.forEach(section => {
+                section.classList.add('fade-in');
+            });
+        }, 300);
+
+        function showDetails(event) {
+            earthquakeDetailsContainer.style.display = 'block';
+            earthquakeListContainer.style.display = 'none';
+
+            detailsContent.innerHTML = `
+                <p><b>Büyüklük:</b> <span class="magnitude">${event.mag}</span></p>
+                <p><b>Konum:</b> ${event.lokasyon}</p>
+                <p><b>Tarih ve Saat:</b> ${event.date}</p>
+                <p><b>Derinlik:</b> ${event.depth} km</p>
+            `;
+        }
 
         function fetchEarthquakes() {
-            // Kandilli API'si
             const apiUrl = 'https://api.orhanaydogdu.com.tr/deprem/kandilli/live';
 
             fetch(apiUrl)
             .then(response => response.json())
             .then(data => {
                 markerLayer.clearLayers();
-                data.result.forEach(event => {
+                earthquakeListContainer.innerHTML = '<h2>Son Depremler</h2>'; // Listeyi temizle
+
+                data.result.slice(0, 10).forEach(event => { // Sadece son 10 depremi al
                     const lat = event.geojson.coordinates[1];
                     const lon = event.geojson.coordinates[0];
-                    const magnitude = event.mag;
-                    const date = event.date;
-                    const depth = event.depth;
-                    const location = event.lokasyon;
+                    const marker = L.marker([lat, lon]).addTo(markerLayer).bindPopup(`
+                        <b>Büyüklük:</b> ${event.mag}<br>
+                        <b>Konum:</b> ${event.lokasyon}<br>
+                        <b>Tarih:</b> ${event.date}
+                    `);
                     
-                    var marker = L.marker([lat, lon]).bindPopup(
-                        `<b>Konum:</b> ${location}<br>` +
-                        `<b>Büyüklük:</b> ${magnitude}<br>` +
-                        `<b>Tarih:</b> ${date}<br>` +
-                        `<b>Derinlik:</b> ${depth} km`
-                    );
-                    markerLayer.addLayer(marker);
+                    // Marker'a tıklama olayını ekle
+                    marker.on('click', function() {
+                        showDetails(event);
+                    });
+
+                    // Listeye ekle
+                    const listItem = document.createElement('div');
+                    listItem.className = 'earthquake-item';
+                    listItem.innerHTML = `
+                        <div>
+                            <span class="magnitude">${event.mag}</span>
+                            <span class="location">${event.lokasyon}</span>
+                        </div>
+                        <div class="time-date">
+                            ${event.date.split(' ')[1]} / ${event.date.split(' ')[0]}
+                        </div>
+                    `;
+
+                    // Listeye tıklama olayını ekle
+                    listItem.addEventListener('click', function() {
+                        showDetails(event);
+                        map.setView([lat, lon], 10); // Haritayı deprem konumuna odakla ve yakınlaştır
+                        marker.openPopup(); // Marker'ın popup'ını aç
+                    });
+
+                    earthquakeListContainer.appendChild(listItem);
                 });
             })
             .catch(error => console.error('API Hatası:', error));
