@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Willkommen auf tr-deprem.com</title>
+    <title>TrDeprem - Acil Durum Haritası</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,44 +12,48 @@
             padding: 0;
             background-color: #f4f4f4;
             color: #333;
-            text-align: center;
-            position: relative;
-            min-height: 100vh;
         }
         header {
-            background-color: #2c3e50;
+            background-color: #003087;
             color: white;
-            padding: 20px;
+            padding: 10px 20px;
+            text-align: center;
         }
-        .content {
-            padding: 40px 20px;
+        nav {
+            background-color: #0055a4;
+            padding: 10px;
+            text-align: center;
         }
-        h1 {
-            color: #e74c3c;
-            margin-bottom: 20px;
-        }
-        p {
-            font-size: 18px;
-            line-height: 1.6;
-            max-width: 600px;
-            margin: 0 auto 30px;
-        }
-        .button {
-            display: inline-block;
-            padding: 12px 25px;
-            background-color: #3498db;
+        nav a {
             color: white;
+            margin: 0 15px;
             text-decoration: none;
-            border-radius: 5px;
-            font-size: 16px;
+            font-weight: bold;
         }
-        .button:hover {
-            background-color: #2980b9;
+        nav a:hover {
+            text-decoration: underline;
         }
-        .profile-img {
-            max-width: 300px;
-            border-radius: 10px;
-            margin: 20px auto;
+        .map-container {
+            width: 100%;
+            height: 600px;
+            margin: 20px 0;
+        }
+        .info {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: left;
+        }
+        .info h2 {
+            color: #003087;
+        }
+        footer {
+            background-color: #003087;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            position: relative;
+            width: 100%;
         }
         .ssl-logo {
             position: fixed;
@@ -60,17 +65,70 @@
 </head>
 <body>
     <header>
-        <h1>Willkommen bei tr-deprem.com</h1>
+        <h1>TrDeprem - Acil Durum Haritası</h1>
     </header>
-    <div class="content">
-        <h1>Testing 123</h1>
-        <img src="WIN_20250816_00_17_34_Pro.jpg" alt="Mein Profilbild" class="profile-img">
-        <p>emm, ja. wilkommen? mein erster Test!</p>
-        <a href="#" class="button">Mehr erfahren</a>
+    <nav>
+        <a href="#guncel">Güncel Olaylar</a>
+        <a href="#gecmis">Geçmiş Veriler</a>
+        <a href="#yardim">Yardım & Destek</a>
+    </nav>
+    <div class="map-container" id="map"></div>
+    <div class="info">
+        <h2>Güncel Bilgiler</h2>
+        <p>TrDeprem Acil Durum Merkezi'ne hoş geldiniz. Burada deprem olaylarına ilişkin güncel bilgiler ve destek kaynakları bulabilirsiniz. Acil durumlarda lütfen resmi makamlara başvurun.</p>
     </div>
+    <footer>
+        <p>&copy; 2025 TrDeprem - Tüm Hakları Saklıdır</p>
+    </footer>
     <a href="https://www.checkdomain.net/en/company/warranties/ssl/popup/" onclick="window.open(this.href + '?host=' + window.location.host,'','height=600,width=560,scrollbars=yes'); return false;" class="ssl-logo">
         <img src="https://www.checkdomain.net/assets/bundles/web/app/widget/seal/img/ssl_certificate/150x150.png?20250812-112811" alt="SSL" />
     </a>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([39.9255, 32.8663], 6); // Türkiye merkezi
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var markerLayer = L.layerGroup().addTo(map); // Marker katmanı için grup
+
+        function fetchEarthquakes() {
+            var endDate = new Date();
+            var startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000); // Son 7 gün
+
+            var filter = {
+                "EventSearchFilterList": [
+                    {"FilterType": 8, "Value": startDate.toISOString()},
+                    {"FilterType": 9, "Value": endDate.toISOString()}
+                ],
+                "Skip": 0,
+                "Take": 50,
+                "SortDescriptor": {"field": "eventDate", "dir": "desc"}
+            };
+
+            fetch('https://deprem.afad.gov.tr/EventData/GetEventsByFilter', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(filter)
+            })
+            .then(response => response.json())
+            .then(data => {
+                markerLayer.clearLayers(); // Eski markerleri temizle
+                data.events.forEach(event => { // Veri yapısını varsaydım; 'events' array'i ve içinde lat, lon, magnitude, eventDate vb.
+                    var marker = L.marker([event.latitude, event.longitude]).bindPopup(
+                        `Büyüklük: ${event.magnitude}<br>Tarih: ${event.eventDate}<br>Derinlik: ${event.depth} km`
+                    );
+                    markerLayer.addLayer(marker);
+                });
+            })
+            .catch(error => console.error('API Hatası:', error));
+        }
+
+        fetchEarthquakes(); // İlk yükleme
+        setInterval(fetchEarthquakes, 2000); // Her 2 saniyede bir güncelle
+    </script>
 </body>
 </html>
-
