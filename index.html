@@ -92,20 +92,38 @@
         .magnitude {
             font-weight: bold;
         }
-        .magnitude.mag-small { color: #5cb85c; } /* green */
-        .magnitude.mag-medium { color: #f0ad4e; } /* orange */
-        .magnitude.mag-large { color: #d9534f; } /* red */
-        .details {
-            display: none;
-            padding-top: 10px;
-            border-top: 1px dashed #e0e0e0;
-            margin-top: 10px;
-        }
-        .details p {
-            margin: 5px 0;
-        }
+        .magnitude.mag-small { color: #5cb85c; }
+        .magnitude.mag-medium { color: #f0ad4e; }
+        .magnitude.mag-large { color: #d9534f; }
         #earthquake-details {
             display: none;
+            position: relative;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 16px;
+            color: white;
+            background-color: #d9534f;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        .close-button:hover {
+            background-color: #c9302c;
         }
         .legend {
             background: white;
@@ -190,7 +208,6 @@
 
         let allEarthquakes = [];
 
-        // Yükleme animasyonunu başlat
         const sections = document.querySelectorAll('.content-section');
         setTimeout(() => {
             sections.forEach(section => {
@@ -208,7 +225,6 @@
             }
         }
 
-        // Legende hinzufügen
         var legend = L.control({position: 'bottomright'});
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend');
@@ -229,6 +245,7 @@
             earthquakeDetailsContainer.style.display = 'block';
 
             detailsContent.innerHTML = `
+                <span class="close-button" onclick="resetListView()">X</span>
                 <p><b>Büyüklük:</b> <span class="magnitude">${event.mag}</span></p>
                 <p><b>Konum:</b> ${event.lokasyon || "Unbekannter Ort"}</p>
                 <p><b>Tarih ve Saat:</b> ${event.date}</p>
@@ -236,7 +253,6 @@
             `;
         }
         
-        // Listenansicht zurücksetzen
         function resetListView() {
             earthquakeDetailsContainer.style.display = 'none';
             document.getElementById('earthquake-list').style.display = 'block';
@@ -301,7 +317,7 @@
                 return passesSearch && passesMagnitude;
             });
 
-            renderEarthquakes(filteredEarthquakes.slice(0, 50)); // Zeige max. 50 Ergebnisse
+            renderEarthquakes(filteredEarthquakes.slice(0, 50));
             resetListView();
         }
 
