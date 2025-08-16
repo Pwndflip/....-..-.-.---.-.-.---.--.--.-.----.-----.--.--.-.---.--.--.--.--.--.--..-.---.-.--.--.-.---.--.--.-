@@ -143,12 +143,17 @@
             color: white;
             text-align: center;
             padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        .ssl-logo {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            z-index: 1000;
+        footer p {
+            margin-right: 10px;
+        }
+        .ssl-logo-footer {
+            display: inline-block;
+            vertical-align: middle;
+            height: 16px;
         }
     </style>
 </head>
@@ -187,10 +192,10 @@
     </div>
     <footer>
         <p>&copy; 2025 TrDeprem - Tüm Hakları Saklıdır</p>
+        <a href="https://www.checkdomain.net/en/company/warranties/ssl/popup/" onclick="window.open(this.href + '?host=' + window.location.host,'','height=600,width=560,scrollbars=yes'); return false;" class="ssl-logo-footer">
+            <img src="https://www.checkdomain.net/assets/bundles/web/app/widget/seal/img/ssl_certificate/150x150.png?20250812-112811" alt="SSL" style="height: 16px; vertical-align: middle; margin-left: 5px;" />
+        </a>
     </footer>
-    <a href="https://www.checkdomain.net/en/company/warranties/ssl/popup/" onclick="window.open(this.href + '?host=' + window.location.host,'','height=600,width=560,scrollbars=yes'); return false;" class="ssl-logo">
-        <img src="https://www.checkdomain.net/assets/bundles/web/app/widget/seal/img/ssl_certificate/150x150.png?20250812-112811" alt="SSL" />
-    </a>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         var map = L.map('map').setView([39.9255, 32.8663], 6);
