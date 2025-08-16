@@ -150,6 +150,7 @@
         footer p {
             margin-right: 10px;
             margin: 0;
+            line-height: 16px; /* Stellt sicher, dass die Zeilenhöhe mit dem Bild übereinstimmt */
         }
         .ssl-logo-footer {
             display: flex;
@@ -256,7 +257,7 @@
             detailsContent.innerHTML = `
                 <span class="close-button" onclick="resetListView()">X</span>
                 <p><b>Büyüklük:</b> <span class="magnitude">${event.mag}</span></p>
-                <p><b>Konum:</b> ${event.location || "Unbekannter Ort"}</p>
+                <p><b>Konum:</b> ${event.lokasyon || "Unbekannter Ort"}</p>
                 <p><b>Tarih ve Saat:</b> ${event.date}</p>
                 <p><b>Derinlik:</b> ${event.depth} km</p>
             `;
@@ -272,8 +273,8 @@
             earthquakeListContainer.innerHTML = '';
             
             earthquakes.forEach(event => {
-                const lat = event.lat;
-                const lon = event.lng;
+                const lat = event.geojson.coordinates[1];
+                const lon = event.geojson.coordinates[0];
                 const magColor = getMagnitudeColor(event.mag);
                 
                 const customIcon = L.divIcon({
@@ -285,7 +286,7 @@
 
                 const marker = L.marker([lat, lon], {icon: customIcon}).addTo(markerLayer).bindPopup(`
                     <b>Büyüklük:</b> ${event.mag}<br>
-                    <b>Konum:</b> ${event.location || "Unbekannter Ort"}<br>
+                    <b>Konum:</b> ${event.lokasyon || "Unbekannter Ort"}<br>
                     <b>Tarih:</b> ${event.date}
                 `);
                 
@@ -298,7 +299,7 @@
                 listItem.innerHTML = `
                     <div>
                         <span class="magnitude mag-${magColor.toLowerCase()}">${event.mag}</span>
-                        <span class="location">${event.location || "Unbekannter Ort"}</span>
+                        <span class="location">${event.lokasyon || "Unbekannter Ort"}</span>
                     </div>
                     <div class="time-date">
                         ${event.date.split(' ')[1]} / ${event.date.split(' ')[0]}
@@ -320,7 +321,7 @@
             const minMagnitude = parseFloat(magnitudeFilter.value);
 
             const filteredEarthquakes = allEarthquakes.filter(event => {
-                const location = event.location ? event.location.toLowerCase() : '';
+                const location = event.lokasyon ? event.lokasyon.toLowerCase() : '';
                 const passesSearch = location.includes(searchText);
                 const passesMagnitude = event.mag >= minMagnitude;
                 return passesSearch && passesMagnitude;
@@ -331,7 +332,7 @@
         }
 
         function fetchEarthquakes() {
-            const apiUrl = 'https://api.kandilli.dev/archive?limit=100'; // Neue, zuverlässigere API
+            const apiUrl = 'https://turkiyedepremapi.herokuapp.com/api';
 
             fetch(apiUrl)
             .then(response => response.json())
