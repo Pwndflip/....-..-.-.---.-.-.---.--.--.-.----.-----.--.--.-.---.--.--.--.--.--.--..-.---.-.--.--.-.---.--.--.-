@@ -149,10 +149,14 @@
         }
         footer p {
             margin-right: 10px;
+            margin: 0;
         }
         .ssl-logo-footer {
-            display: inline-block;
-            vertical-align: middle;
+            display: flex;
+            align-items: center;
+            margin-left: 5px;
+        }
+        .ssl-logo-footer img {
             height: 16px;
         }
     </style>
@@ -193,7 +197,7 @@
     <footer>
         <p>&copy; 2025 TrDeprem - Tüm Hakları Saklıdır</p>
         <a href="https://www.checkdomain.net/en/company/warranties/ssl/popup/" onclick="window.open(this.href + '?host=' + window.location.host,'','height=600,width=560,scrollbars=yes'); return false;" class="ssl-logo-footer">
-            <img src="https://www.checkdomain.net/assets/bundles/web/app/widget/seal/img/ssl_certificate/150x150.png?20250812-112811" alt="SSL" style="height: 16px; vertical-align: middle; margin-left: 5px;" />
+            <img src="https://www.checkdomain.net/assets/bundles/web/app/widget/seal/img/ssl_certificate/150x150.png?20250812-112811" alt="SSL" />
         </a>
     </footer>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -252,7 +256,7 @@
             detailsContent.innerHTML = `
                 <span class="close-button" onclick="resetListView()">X</span>
                 <p><b>Büyüklük:</b> <span class="magnitude">${event.mag}</span></p>
-                <p><b>Konum:</b> ${event.lokasyon || "Unbekannter Ort"}</p>
+                <p><b>Konum:</b> ${event.location || "Unbekannter Ort"}</p>
                 <p><b>Tarih ve Saat:</b> ${event.date}</p>
                 <p><b>Derinlik:</b> ${event.depth} km</p>
             `;
@@ -268,8 +272,8 @@
             earthquakeListContainer.innerHTML = '';
             
             earthquakes.forEach(event => {
-                const lat = event.geojson.coordinates[1];
-                const lon = event.geojson.coordinates[0];
+                const lat = event.lat;
+                const lon = event.lng;
                 const magColor = getMagnitudeColor(event.mag);
                 
                 const customIcon = L.divIcon({
@@ -281,7 +285,7 @@
 
                 const marker = L.marker([lat, lon], {icon: customIcon}).addTo(markerLayer).bindPopup(`
                     <b>Büyüklük:</b> ${event.mag}<br>
-                    <b>Konum:</b> ${event.lokasyon || "Unbekannter Ort"}<br>
+                    <b>Konum:</b> ${event.location || "Unbekannter Ort"}<br>
                     <b>Tarih:</b> ${event.date}
                 `);
                 
@@ -294,7 +298,7 @@
                 listItem.innerHTML = `
                     <div>
                         <span class="magnitude mag-${magColor.toLowerCase()}">${event.mag}</span>
-                        <span class="location">${event.lokasyon || "Unbekannter Ort"}</span>
+                        <span class="location">${event.location || "Unbekannter Ort"}</span>
                     </div>
                     <div class="time-date">
                         ${event.date.split(' ')[1]} / ${event.date.split(' ')[0]}
@@ -316,7 +320,7 @@
             const minMagnitude = parseFloat(magnitudeFilter.value);
 
             const filteredEarthquakes = allEarthquakes.filter(event => {
-                const location = event.lokasyon ? event.lokasyon.toLowerCase() : '';
+                const location = event.location ? event.location.toLowerCase() : '';
                 const passesSearch = location.includes(searchText);
                 const passesMagnitude = event.mag >= minMagnitude;
                 return passesSearch && passesMagnitude;
@@ -327,12 +331,12 @@
         }
 
         function fetchEarthquakes() {
-            const apiUrl = 'https://api.orhanaydogdu.com.tr/deprem/kandilli/live';
+            const apiUrl = 'https://api.kandilli.dev/archive?limit=100'; // Neue, zuverlässigere API
 
             fetch(apiUrl)
             .then(response => response.json())
             .then(data => {
-                allEarthquakes = data.result;
+                allEarthquakes = data.data;
                 filterAndRender();
             })
             .catch(error => console.error('API Hatası:', error));
