@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,10 +8,10 @@
     <style>
         /* Grundlegende Stile */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; /* iOS-ähnliche Schrift */
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #efefef; /* Heller Hintergrund */
+            background: #e7e7ee; /* Heller, sanfter Hintergrund */
             color: #333;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -19,10 +19,29 @@
 
         /* AFAD Farben (angenähert) */
         :root {
-            --afad-red: #e74c3c;
+            --afad-red: #E74C3C;
             --afad-white: #ffffff;
             --afad-dark: #2c3e50;
-            --afad-light: #f0f0f0;
+            --afad-light-bg: #F0F0F5;
+            --ios-glass-border: rgba(255, 255, 255, 0.5);
+            --ios-glass-shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Haupt-Wrapper für Glassmorphism */
+        .glass-container {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--ios-glass-border);
+            border-radius: 20px;
+            box-shadow: 0 4px 30px var(--ios-glass-shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.5s ease-out;
+        }
+        
+        .glass-container:hover {
+            box-shadow: 0 8px 40px var(--ios-glass-shadow);
         }
 
         /* Header */
@@ -31,8 +50,7 @@
             color: var(--afad-white);
             padding: 15px 20px;
             text-align: center;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
         }
 
         /* Navigation */
@@ -40,7 +58,9 @@
             background-color: var(--afad-white);
             padding: 10px;
             text-align: center;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
         }
         nav a {
             color: var(--afad-dark);
@@ -49,36 +69,29 @@
             font-weight: 500;
             border-radius: 8px;
             padding: 8px 15px;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, transform 0.2s ease;
         }
         nav a:hover {
-            background-color: var(--afad-light);
+            background-color: var(--afad-light-bg);
+            transform: translateY(-2px);
         }
 
         /* Container */
         .container {
             max-width: 1200px;
             margin: 20px auto;
-            padding: 20px;
+            padding: 0 20px;
         }
 
         /* Karten-Container */
         .map-container {
             width: 100%;
             height: 500px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden; /* Für abgerundete Ecken bei der Karte */
+            overflow: hidden;
         }
 
         /* Content Section */
         .content-section {
-            background-color: var(--afad-white);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 0.5s ease-out, transform 0.5s ease-out;
@@ -91,7 +104,7 @@
         /* Überschriften */
         h2 {
             color: var(--afad-red);
-            border-bottom: 2px solid var(--afad-light);
+            border-bottom: 2px solid var(--afad-light-bg);
             padding-bottom: 10px;
             margin-bottom: 15px;
             font-weight: 600;
@@ -105,16 +118,19 @@
             margin-bottom: 20px;
         }
         .controls input, .controls select {
-            padding: 10px;
+            padding: 12px;
             border: 1px solid #ddd;
-            border-radius: 8px;
+            border-radius: 12px;
+            background-color: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(5px);
             box-sizing: border-box;
             font-size: 16px;
-            transition: border-color 0.3s ease;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
         .controls input:focus, .controls select:focus {
             border-color: var(--afad-red);
             outline: none;
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.2);
         }
 
         /* Erdbeben-Eintrag */
@@ -124,12 +140,16 @@
             padding: 15px;
             border-bottom: 1px solid #eee;
             cursor: pointer;
-            border-radius: 8px;
-            transition: background-color 0.3s ease;
-            margin-bottom: 8px;
+            border-radius: 10px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin-bottom: 10px;
+            background-color: var(--afad-white);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
         .earthquake-item:hover {
-            background-color: var(--afad-light);
+            background-color: var(--afad-light-bg);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .earthquake-item:last-child {
             border-bottom: none;
@@ -146,11 +166,6 @@
         #earthquake-details {
             display: none;
             position: relative;
-            background-color: var(--afad-white);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
         }
         #earthquake-details h2 {
             color: var(--afad-red);
@@ -170,8 +185,8 @@
             background-color: var(--afad-red);
             border: none;
             border-radius: 50%;
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -179,6 +194,7 @@
             padding: 0;
             line-height: 1;
             transition: background-color 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
         .close-button:hover {
             background-color: #c9302c;
@@ -188,7 +204,7 @@
         .legend {
             background: var(--afad-white);
             padding: 10px;
-            border-radius: 8px;
+            border-radius: 10px;
             line-height: 18px;
             color: #555;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
@@ -216,7 +232,7 @@
         footer p {
             margin-right: 10px;
             margin: 0;
-            line-height: 16px; /* Stellt sicher, dass die Zeilenhöhe mit dem Bild übereinstimmt */
+            line-height: 16px;
             font-size: 0.9em;
         }
         .ssl-logo-footer {
@@ -228,7 +244,6 @@
         .ssl-logo-footer img {
             height: 18px;
         }
-
     </style>
 </head>
 <body>
@@ -241,8 +256,8 @@
         <a href="#yardim">Yardım & Destek</a>
     </nav>
     <div class="container">
-        <div class="map-container" id="map"></div>
-        <div class="content-section" id="earthquake-list-section">
+        <div class="map-container glass-container" id="map"></div>
+        <div class="content-section glass-container" id="earthquake-list-section">
             <div id="earthquake-details">
                 <h2>Seçilen Deprem Bilgisi</h2>
                 <div id="details-content"></div>
