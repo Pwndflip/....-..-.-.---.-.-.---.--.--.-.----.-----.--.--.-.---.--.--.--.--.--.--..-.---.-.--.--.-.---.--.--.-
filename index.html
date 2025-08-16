@@ -40,7 +40,7 @@
         }
         .map-container {
             width: 100%;
-            height: 500px; /* Biraz küçültüldü */
+            height: 500px;
             margin-bottom: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -64,6 +64,17 @@
             border-bottom: 2px solid #e0e0e0;
             padding-bottom: 10px;
         }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .controls input, .controls select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
         .earthquake-item {
             display: flex;
             justify-content: space-between;
@@ -80,8 +91,10 @@
         }
         .magnitude {
             font-weight: bold;
-            color: #d9534f;
         }
+        .magnitude.mag-small { color: #5cb85c; } /* green */
+        .magnitude.mag-medium { color: #f0ad4e; } /* orange */
+        .magnitude.mag-large { color: #d9534f; } /* red */
         .details {
             display: none;
             padding-top: 10px;
@@ -93,6 +106,19 @@
         }
         #earthquake-details {
             display: none;
+        }
+        .legend {
+            background: white;
+            padding: 10px;
+            line-height: 18px;
+            color: #555;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
         }
         footer {
             background-color: #003087;
@@ -126,6 +152,18 @@
             </div>
             <div id="earthquake-list">
                 <h2>Son Depremler</h2>
+                <div class="controls">
+                    <input type="text" id="search-input" placeholder="Nach Ort suchen...">
+                    <select id="magnitude-filter">
+                        <option value="0">Alle Stärken</option>
+                        <option value="1">ab 1.0+</option>
+                        <option value="2">ab 2.0+</option>
+                        <option value="3">ab 3.0+</option>
+                        <option value="4">ab 4.0+</option>
+                        <option value="5">ab 5.0+</option>
+                    </select>
+                </div>
+                <div id="earthquakes-container"></div>
             </div>
         </div>
     </div>
@@ -137,16 +175,20 @@
     </a>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        var map = L.map('map').setView([39.9255, 32.8663], 6); // Türkiye merkezi
+        var map = L.map('map').setView([39.9255, 32.8663], 6);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
         var markerLayer = L.layerGroup().addTo(map);
-        const earthquakeListContainer = document.getElementById('earthquake-list');
+        const earthquakeListContainer = document.getElementById('earthquakes-container');
         const earthquakeDetailsContainer = document.getElementById('earthquake-details');
         const detailsContent = document.getElementById('details-content');
+        const searchInput = document.getElementById('search-input');
+        const magnitudeFilter = document.getElementById('magnitude-filter');
+
+        let allEarthquakes = [];
 
         // Yükleme animasyonunu başlat
         const sections = document.querySelectorAll('.content-section');
@@ -156,16 +198,111 @@
             });
         }, 300);
 
+        function getMagnitudeColor(mag) {
+            if (mag >= 5.0) {
+                return 'red';
+            } else if (mag >= 3.0) {
+                return 'orange';
+            } else {
+                return 'green';
+            }
+        }
+
+        // Legende hinzufügen
+        var legend = L.control({position: 'bottomright'});
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info legend');
+            var grades = [0, 3.0, 5.0];
+            var labels = ['< 3.0', '3.0 - 5.0', '> 5.0'];
+            var colors = ['green', 'orange', 'red'];
+
+            for (var i = 0; i < grades.length; i++) {
+                div.innerHTML +=
+                    '<i style="background:' + colors[i] + '"></i> ' + labels[i] + '<br>';
+            }
+            return div;
+        };
+        legend.addTo(map);
+
         function showDetails(event) {
+            document.getElementById('earthquake-list').style.display = 'none';
             earthquakeDetailsContainer.style.display = 'block';
-            earthquakeListContainer.style.display = 'none';
 
             detailsContent.innerHTML = `
                 <p><b>Büyüklük:</b> <span class="magnitude">${event.mag}</span></p>
-                <p><b>Konum:</b> ${event.lokasyon}</p>
+                <p><b>Konum:</b> ${event.lokasyon || "Unbekannter Ort"}</p>
                 <p><b>Tarih ve Saat:</b> ${event.date}</p>
                 <p><b>Derinlik:</b> ${event.depth} km</p>
             `;
+        }
+        
+        // Listenansicht zurücksetzen
+        function resetListView() {
+            earthquakeDetailsContainer.style.display = 'none';
+            document.getElementById('earthquake-list').style.display = 'block';
+        }
+
+        function renderEarthquakes(earthquakes) {
+            markerLayer.clearLayers();
+            earthquakeListContainer.innerHTML = '';
+            
+            earthquakes.forEach(event => {
+                const lat = event.geojson.coordinates[1];
+                const lon = event.geojson.coordinates[0];
+                const magColor = getMagnitudeColor(event.mag);
+                
+                const customIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div style="background-color:${magColor}; width:20px; height:20px; border-radius:50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                });
+
+                const marker = L.marker([lat, lon], {icon: customIcon}).addTo(markerLayer).bindPopup(`
+                    <b>Büyüklük:</b> ${event.mag}<br>
+                    <b>Konum:</b> ${event.lokasyon || "Unbekannter Ort"}<br>
+                    <b>Tarih:</b> ${event.date}
+                `);
+                
+                marker.on('click', function() {
+                    showDetails(event);
+                });
+
+                const listItem = document.createElement('div');
+                listItem.className = 'earthquake-item';
+                listItem.innerHTML = `
+                    <div>
+                        <span class="magnitude mag-${magColor.toLowerCase()}">${event.mag}</span>
+                        <span class="location">${event.lokasyon || "Unbekannter Ort"}</span>
+                    </div>
+                    <div class="time-date">
+                        ${event.date.split(' ')[1]} / ${event.date.split(' ')[0]}
+                    </div>
+                `;
+
+                listItem.addEventListener('click', function() {
+                    showDetails(event);
+                    map.setView([lat, lon], 10);
+                    marker.openPopup();
+                });
+
+                earthquakeListContainer.appendChild(listItem);
+            });
+        }
+
+        function filterAndRender() {
+            const searchText = searchInput.value.toLowerCase();
+            const minMagnitude = parseFloat(magnitudeFilter.value);
+
+            const filteredEarthquakes = allEarthquakes.filter(event => {
+                const location = event.lokasyon ? event.lokasyon.toLowerCase() : '';
+                const passesSearch = location.includes(searchText);
+                const passesMagnitude = event.mag >= minMagnitude;
+                return passesSearch && passesMagnitude;
+            });
+
+            renderEarthquakes(filteredEarthquakes.slice(0, 50)); // Zeige max. 50 Ergebnisse
+            resetListView();
         }
 
         function fetchEarthquakes() {
@@ -174,51 +311,17 @@
             fetch(apiUrl)
             .then(response => response.json())
             .then(data => {
-                markerLayer.clearLayers();
-                earthquakeListContainer.innerHTML = '<h2>Son Depremler</h2>'; // Listeyi temizle
-
-                data.result.slice(0, 10).forEach(event => { // Sadece son 10 depremi al
-                    const lat = event.geojson.coordinates[1];
-                    const lon = event.geojson.coordinates[0];
-                    const marker = L.marker([lat, lon]).addTo(markerLayer).bindPopup(`
-                        <b>Büyüklük:</b> ${event.mag}<br>
-                        <b>Konum:</b> ${event.lokasyon}<br>
-                        <b>Tarih:</b> ${event.date}
-                    `);
-                    
-                    // Marker'a tıklama olayını ekle
-                    marker.on('click', function() {
-                        showDetails(event);
-                    });
-
-                    // Listeye ekle
-                    const listItem = document.createElement('div');
-                    listItem.className = 'earthquake-item';
-                    listItem.innerHTML = `
-                        <div>
-                            <span class="magnitude">${event.mag}</span>
-                            <span class="location">${event.lokasyon}</span>
-                        </div>
-                        <div class="time-date">
-                            ${event.date.split(' ')[1]} / ${event.date.split(' ')[0]}
-                        </div>
-                    `;
-
-                    // Listeye tıklama olayını ekle
-                    listItem.addEventListener('click', function() {
-                        showDetails(event);
-                        map.setView([lat, lon], 10); // Haritayı deprem konumuna odakla ve yakınlaştır
-                        marker.openPopup(); // Marker'ın popup'ını aç
-                    });
-
-                    earthquakeListContainer.appendChild(listItem);
-                });
+                allEarthquakes = data.result;
+                filterAndRender();
             })
             .catch(error => console.error('API Hatası:', error));
         }
+        
+        searchInput.addEventListener('input', filterAndRender);
+        magnitudeFilter.addEventListener('change', filterAndRender);
 
-        fetchEarthquakes(); // İlk yükleme
-        setInterval(fetchEarthquakes, 60000); // Her 60 saniyede bir güncelle
+        fetchEarthquakes();
+        setInterval(fetchEarthquakes, 60000);
     </script>
 </body>
 </html>
